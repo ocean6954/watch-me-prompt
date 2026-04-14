@@ -17,11 +17,13 @@ bash <(curl -sf https://raw.githubusercontent.com/ocean6954/watch-me-prompt/main
 Claude Code で以下のコマンドを実行:
 
 ```
-/share-prompt          # 一覧から選択して共有
+/share-prompt          # 未送信の全プロンプトを共有（デフォルト）
 /share-prompt 1        # 直前のプロンプトを共有
 /share-prompt 3        # 直近3件を共有
-/share-prompt all      # 全件を共有
+/share-prompt pick     # 一覧から選択して共有
 ```
+
+> **Note**: スキルは確認なしで即実行される設定になっています。毎回確認が欲しい場合は `share-prompt.md` 内の「確認なしで即実行してください」の記述を削除してください。
 
 ## 前提条件
 

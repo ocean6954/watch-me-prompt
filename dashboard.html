@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>watch-me-prompt</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-hover: #1a1a25;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --text-muted: #6a6a80;
+    --accent: #4af;
+    --accent-dim: #4af3;
+    --green: #4d8;
+    --amber: #fa4;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Noto Sans JP', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    animation: slideDown 0.4s ease;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .header h1 {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+  }
+
+  .header h1 span { color: var(--text-muted); font-weight: 300; }
+
+  .stats {
+    display: flex;
+    gap: 24px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .stats strong { color: var(--text); font-weight: 500; }
+
+  /* Controls */
+  .controls {
+    padding: 20px 32px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.5s ease 0.1s both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .controls input, .controls select {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .controls input:focus, .controls select:focus {
+    border-color: var(--accent);
+  }
+
+  .controls input { width: 280px; }
+  .controls select { cursor: pointer; }
+
+  .controls select option { background: var(--surface); }
+
+  .refresh-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 16px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: auto;
+  }
+
+  .refresh-btn:hover { background: var(--accent); color: var(--bg); }
+
+  /* Table */
+  .table-wrap {
+    padding: 20px 32px;
+    animation: fadeIn 0.5s ease 0.2s both;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+  }
+
+  th:hover { color: var(--accent); }
+  th.sorted { color: var(--accent); }
+  th.sorted::after { content: ' \25BC'; font-size: 9px; }
+  th.sorted.asc::after { content: ' \25B2'; }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  tr { transition: background 0.15s; }
+  tr:hover { background: var(--surface-hover); }
+
+  .col-time {
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: 12px;
+    width: 160px;
+  }
+
+  .col-project {
+    width: 120px;
+  }
+
+  .col-project span {
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .col-user {
+    width: 120px;
+  }
+
+  .col-user span {
+    color: var(--green);
+    font-size: 12px;
+  }
+
+  .col-prompt {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--text);
+    max-width: 600px;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 80px 32px;
+    color: var(--text-muted);
+    font-size: 14px;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .empty .icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 80px 32px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .loading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Row animation */
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  tbody tr {
+    animation: rowIn 0.3s ease both;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>watch-me-prompt <span>/ dashboard</span></h1>
+  <div class="stats">
+    <div>prompts: <strong id="total-count">-</strong></div>
+    <div>projects: <strong id="project-count">-</strong></div>
+    <div>users: <strong id="user-count">-</strong></div>
+  </div>
+</div>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Search prompts...">
+  <select id="filter-project"><option value="">All projects</option></select>
+  <select id="filter-user"><option value="">All users</option></select>
+  <button class="refresh-btn" onclick="fetchData()">Refresh</button>
+</div>
+
+<div class="table-wrap">
+  <div id="loading" class="loading">Loading</div>
+  <table id="table" style="display:none">
+    <thead>
+      <tr>
+        <th data-key="createdAt" class="sorted">Date</th>
+        <th data-key="project">Project</th>
+        <th data-key="user">User</th>
+        <th data-key="prompt">Prompt</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="empty" class="empty" style="display:none">
+    <div class="icon">&gt;_</div>
+    <div>No prompts found</div>
+  </div>
+</div>
+
+<script>
+const API = 'https://dh5rv4ta1l.execute-api.ap-northeast-1.amazonaws.com/prod/prompts';
+
+let allItems = [];
+let sortKey = 'createdAt';
+let sortAsc = false;
+
+async function fetchData() {
+  const loading = document.getElementById('loading');
+  const table = document.getElementById('table');
+  const empty = document.getElementById('empty');
+
+  loading.style.display = 'block';
+  table.style.display = 'none';
+  empty.style.display = 'none';
+
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
+    allItems = data.items || [];
+
+    document.getElementById('total-count').textContent = allItems.length;
+    const projects = [...new Set(allItems.map(i => i.project))];
+    const users = [...new Set(allItems.map(i => i.user))];
+    document.getElementById('project-count').textContent = projects.length;
+    document.getElementById('user-count').textContent = users.length;
+
+    populateFilter('filter-project', projects);
+    populateFilter('filter-user', users);
+
+    render();
+  } catch (e) {
+    loading.textContent = 'Failed to load: ' + e.message;
+  }
+}
+
+function populateFilter(id, values) {
+  const select = document.getElementById(id);
+  const current = select.value;
+  const label = id === 'filter-project' ? 'All projects' : 'All users';
+  select.innerHTML = `<option value="">${label}</option>`;
+  values.sort().forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    select.appendChild(opt);
+  });
+  select.value = current;
+}
+
+function render() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const project = document.getElementById('filter-project').value;
+  const user = document.getElementById('filter-user').value;
+
+  let items = allItems.filter(item => {
+    if (project && item.project !== project) return false;
+    if (user && item.user !== user) return false;
+    if (search && !item.prompt.toLowerCase().includes(search) &&
+        !item.project.toLowerCase().includes(search) &&
+        !item.user.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  items.sort((a, b) => {
+    const av = a[sortKey] || '';
+    const bv = b[sortKey] || '';
+    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+    return sortAsc ? cmp : -cmp;
+  });
+
+  const loading = document.getElementById('loading');
+  const table = document.getElementById('table');
+  const empty = document.getElementById('empty');
+  const tbody = document.getElementById('tbody');
+
+  loading.style.display = 'none';
+
+  if (items.length === 0) {
+    table.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  table.style.display = 'table';
+  empty.style.display = 'none';
+
+  tbody.innerHTML = items.map((item, i) => `
+    <tr style="animation-delay: ${Math.min(i * 30, 300)}ms">
+      <td class="col-time">${formatDate(item.createdAt)}</td>
+      <td class="col-project"><span>${esc(item.project)}</span></td>
+      <td class="col-user"><span>${esc(item.user)}</span></td>
+      <td class="col-prompt">${esc(item.prompt)}</td>
+    </tr>
+  `).join('');
+}
+
+function formatDate(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function esc(s) {
+  const div = document.createElement('div');
+  div.textContent = s || '';
+  return div.innerHTML;
+}
+
+// Sort
+document.querySelectorAll('th[data-key]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    if (sortKey === key) {
+      sortAsc = !sortAsc;
+    } else {
+      sortKey = key;
+      sortAsc = true;
+    }
+    document.querySelectorAll('th').forEach(t => t.classList.remove('sorted', 'asc'));
+    th.classList.add('sorted');
+    if (sortAsc) th.classList.add('asc');
+    render();
+  });
+});
+
+// Filters
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('filter-project').addEventListener('change', render);
+document.getElementById('filter-user').addEventListener('change', render);
+
+// Init
+fetchData();
+</script>
+
+</body>
+</html>

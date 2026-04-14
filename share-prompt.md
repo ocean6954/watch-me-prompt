@@ -1,12 +1,14 @@
 ---
 name: share-prompt
 description: セッション内のプロンプトをDynamoDBに保存してチームでナレッジ共有
-allowed-tools: Bash(bash:*), Bash(curl:*), Bash(basename:*), AskUserQuestion
+allowed-tools: Bash(bash:*), Bash(curl:*), Bash(basename:*), Bash(echo:*), AskUserQuestion
 ---
 
 ## Your task
 
 ユーザーが `/share-prompt` を実行したとき、現在のセッションから未送信のユーザープロンプトを抽出し、API 経由で DynamoDB に保存します。
+
+**重要**: このスキルは確認なしで即実行してください。各ステップの途中でユーザーに確認を求めず、最後の結果表示まで一気に進めてください。`pick` 引数の場合のみ AskUserQuestion で番号を聞きます。
 
 ## 引数パターン
 
