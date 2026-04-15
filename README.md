@@ -31,6 +31,31 @@ Claude Code で以下のコマンドを実行:
 - 社内 WiFi に接続していること
 - `python3` が使えること（macOS 標準搭載）
 
+## インストールで作成されるファイル
+
+`install.sh` を実行すると以下のファイルが作成されます。削除する場合は手動で対応してください。
+
+| ファイル | 内容 |
+|---|---|
+| `~/.claude/commands/share-prompt.md` | スラッシュコマンド定義 |
+| `~/.claude/scripts/extract-prompts.sh` | プロンプト抽出スクリプト |
+| `~/.claude/dashboard.html` | ダッシュボード |
+| `~/.claude/.shared-prompt-history` | 送信済み履歴（使用後に生成） |
+
+```bash
+rm -f ~/.claude/commands/share-prompt.md \
+      ~/.claude/scripts/extract-prompts.sh \
+      ~/.claude/dashboard.html \
+      ~/.claude/.shared-prompt-history
+```
+
+また、`.zshrc` に追加された環境変数も削除してください:
+
+```bash
+# .zshrc から以下の行を削除
+export SHARE_PROMPT_API_URL="https://..."
+```
+
 ## 管理者向け
 
 AWS リソースのセットアップは別途 `~/.claude/scripts/setup-shared-prompts.sh` で行います。
