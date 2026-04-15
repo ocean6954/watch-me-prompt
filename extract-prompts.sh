@@ -100,6 +100,7 @@ if len(user) > 64 or len(user) == 0 or re.search(r'[\x00-\x1f\x7f"\'`$\\;|&<>(){
 
 # ─── 定数 ───
 MIN_LENGTH = 5
+BATCH_SIZE = 50  # サーバー側の maxPrompts と揃える
 HISTORY_FILE = os.path.expanduser("~/.claude/.shared-prompt-history")
 SKIP_PREFIXES = [
     "<command-message>",
@@ -218,44 +219,56 @@ if not selected:
     print("送信対象のプロンプトがありません。")
     sys.exit(0)
 
-# ─── ペイロード構築 ───
+# ─── バッチ分割して送信 ───
 project = os.path.basename(os.getcwd())
-payload = json.dumps({
-    "prompts": selected,
-    "project": project,
-    "user": user
-}, ensure_ascii=False)
+total = len(selected)
+batches = [selected[i:i + BATCH_SIZE] for i in range(0, total, BATCH_SIZE)]
+batch_count = len(batches)
+sent = 0
 
-# ─── API 送信 ───
-result = subprocess.run(
-    ["curl", "-s", "-w", "\n%{http_code}", "-X", "POST", api_url,
-     "--max-time", "30",
-     "-H", "Content-Type: application/json", "-d", "@-"],
-    input=payload,
-    capture_output=True, text=True
-)
+for batch_idx, batch in enumerate(batches, 1):
+    payload = json.dumps({
+        "prompts": batch,
+        "project": project,
+        "user": user
+    }, ensure_ascii=False)
 
-output_lines = result.stdout.strip().rsplit("\n", 1)
-body = output_lines[0] if len(output_lines) > 1 else ""
-status_code = output_lines[-1] if output_lines else ""
+    if batch_count > 1:
+        print(f"バッチ {batch_idx}/{batch_count} を送信中... ({len(batch)}件)", file=sys.stderr)
 
-if result.returncode != 0:
-    print(f"curl エラー (exit code {result.returncode})", file=sys.stderr)
-    if result.stderr:
-        print(result.stderr, file=sys.stderr)
-    sys.exit(1)
+    result = subprocess.run(
+        ["curl", "-s", "-w", "\n%{http_code}", "-X", "POST", api_url,
+         "--max-time", "30",
+         "-H", "Content-Type: application/json", "-d", "@-"],
+        input=payload,
+        capture_output=True, text=True
+    )
 
-if not status_code.isdigit() or int(status_code) >= 400:
-    print(f"API エラー (HTTP {status_code}): {body}", file=sys.stderr)
-    sys.exit(1)
+    output_lines = result.stdout.strip().rsplit("\n", 1)
+    body = output_lines[0] if len(output_lines) > 1 else ""
+    status_code = output_lines[-1] if output_lines else ""
 
-# ─── 送信済み記録 ───
-hashes = [prompt_hash(p["text"]) for p in selected]
-save_history(hashes)
+    if result.returncode != 0:
+        print(f"curl エラー (バッチ {batch_idx}/{batch_count}, exit code {result.returncode})", file=sys.stderr)
+        if result.stderr:
+            print(result.stderr, file=sys.stderr)
+        print(f"- 送信済み: {sent}件 / 全体: {total}件", file=sys.stderr)
+        sys.exit(1)
+
+    if not status_code.isdigit() or int(status_code) >= 400:
+        print(f"API エラー (バッチ {batch_idx}/{batch_count}, HTTP {status_code}): {body}", file=sys.stderr)
+        print(f"- 送信済み: {sent}件 / 全体: {total}件", file=sys.stderr)
+        sys.exit(1)
+
+    # バッチ成功 → 即時履歴記録（途中失敗時も進捗を残す）
+    save_history([prompt_hash(p["text"]) for p in batch])
+    sent += len(batch)
 
 # ─── 結果表示 ───
 print(f"共有完了")
-print(f"- 保存件数: {len(selected)}件")
+print(f"- 保存件数: {sent}件")
+if batch_count > 1:
+    print(f"- バッチ数: {batch_count}")
 print(f"- プロジェクト: {project}")
 print(f"- ユーザー: {user}")
 
