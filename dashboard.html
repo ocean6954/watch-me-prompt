@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src https: http://localhost:*; font-src 'self'">
 <title>watch-me-prompt</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
   :root {
     --bg: #0a0a0f;
@@ -18,8 +18,8 @@
     --accent-dim: #4af3;
     --green: #4d8;
     --amber: #fa4;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Noto Sans JP', sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', sans-serif;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -117,62 +117,122 @@
 
   .refresh-btn:hover { background: var(--accent); color: var(--bg); }
 
-  /* Table */
-  .table-wrap {
+  /* Tree */
+  .tree-wrap {
     padding: 20px 32px;
     animation: fadeIn 0.5s ease 0.2s both;
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
+  .tree-node {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 4px;
+    overflow: hidden;
   }
 
-  th {
-    text-align: left;
+  .tree-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 10px 16px;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: var(--bg);
+    background: var(--surface);
     cursor: pointer;
     user-select: none;
-    transition: color 0.2s;
+    transition: background 0.15s;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
   }
 
-  th:hover { color: var(--accent); }
-  th.sorted { color: var(--accent); }
-  th.sorted::after { content: ' \25BC'; font-size: 9px; }
-  th.sorted.asc::after { content: ' \25B2'; }
+  .tree-toggle:hover { background: var(--surface-hover); }
 
-  td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-    line-height: 1.6;
-  }
-
-  tr { transition: background 0.15s; }
-  tr:hover { background: var(--surface-hover); }
-
-  .col-time {
-    white-space: nowrap;
+  .tree-arrow {
+    display: inline-block;
+    font-size: 10px;
     color: var(--text-muted);
-    font-size: 12px;
-    width: 160px;
+    transition: transform 0.2s;
+    width: 12px;
+    text-align: center;
+    flex-shrink: 0;
   }
 
-  .col-project {
-    width: 120px;
+  .tree-node.open > .tree-toggle .tree-arrow { transform: rotate(90deg); }
+
+  .tree-icon {
+    font-size: 14px;
+    flex-shrink: 0;
   }
 
-  .col-project span {
+  .tree-label {
+    font-weight: 500;
+  }
+
+  .tree-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  .tree-children {
+    display: none;
+    padding-left: 20px;
+  }
+
+  .tree-node.open > .tree-children { display: block; }
+
+  /* Project node nested */
+  .tree-children .tree-node {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    margin-bottom: 0;
+  }
+
+  .tree-children .tree-node:last-child { border-bottom: none; }
+
+  .tree-children .tree-toggle {
+    background: transparent;
+    padding: 8px 16px;
+  }
+
+  /* Prompt items */
+  .prompt-list {
+    display: none;
+    padding: 0 16px 8px 42px;
+  }
+
+  .tree-node.open > .prompt-list { display: block; }
+
+  .prompt-item {
+    padding: 10px 14px;
+    border-left: 2px solid var(--border);
+    margin-bottom: 6px;
+    transition: border-color 0.2s;
+    animation: rowIn 0.3s ease both;
+  }
+
+  .prompt-item:hover { border-left-color: var(--accent); }
+
+  .prompt-text {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1.6;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  .prompt-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .tag-project {
     background: var(--accent-dim);
     color: var(--accent);
     padding: 2px 8px;
@@ -181,23 +241,9 @@
     font-weight: 500;
   }
 
-  .col-user {
-    width: 120px;
-  }
-
-  .col-user span {
+  .tag-user {
     color: var(--green);
     font-size: 12px;
-  }
-
-  .col-prompt {
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 300;
-    color: var(--text);
-    max-width: 600px;
-    word-break: break-word;
-    white-space: pre-wrap;
   }
 
   /* Empty state */
@@ -263,19 +309,9 @@
   <button class="refresh-btn" onclick="fetchData()">Refresh</button>
 </div>
 
-<div class="table-wrap">
+<div class="tree-wrap">
   <div id="loading" class="loading">Loading</div>
-  <table id="table" style="display:none">
-    <thead>
-      <tr>
-        <th data-key="createdAt" class="sorted">Date</th>
-        <th data-key="project">Project</th>
-        <th data-key="user">User</th>
-        <th data-key="prompt">Prompt</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <div id="tree" style="display:none"></div>
   <div id="empty" class="empty" style="display:none">
     <div class="icon">&gt;_</div>
     <div>No prompts found</div>
@@ -286,16 +322,14 @@
 const API = '__API_URL__';
 
 let allItems = [];
-let sortKey = 'createdAt';
-let sortAsc = false;
 
 async function fetchData() {
   const loading = document.getElementById('loading');
-  const table = document.getElementById('table');
+  const tree = document.getElementById('tree');
   const empty = document.getElementById('empty');
 
   loading.style.display = 'block';
-  table.style.display = 'none';
+  tree.style.display = 'none';
   empty.style.display = 'none';
 
   try {
@@ -322,7 +356,7 @@ function populateFilter(id, values) {
   const select = document.getElementById(id);
   const current = select.value;
   const label = id === 'filter-project' ? 'All projects' : 'All users';
-  select.innerHTML = `<option value="">${label}</option>`;
+  select.innerHTML = '<option value="">' + label + '</option>';
   values.sort().forEach(v => {
     const opt = document.createElement('option');
     opt.value = v;
@@ -332,12 +366,12 @@ function populateFilter(id, values) {
   select.value = current;
 }
 
-function render() {
+function filterItems() {
   const search = document.getElementById('search').value.toLowerCase();
   const project = document.getElementById('filter-project').value;
   const user = document.getElementById('filter-user').value;
 
-  let items = allItems.filter(item => {
+  return allItems.filter(item => {
     if (project && item.project !== project) return false;
     if (user && item.user !== user) return false;
     if (search && !item.prompt.toLowerCase().includes(search) &&
@@ -345,45 +379,91 @@ function render() {
         !item.user.toLowerCase().includes(search)) return false;
     return true;
   });
+}
 
-  items.sort((a, b) => {
-    const av = a[sortKey] || '';
-    const bv = b[sortKey] || '';
-    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
-    return sortAsc ? cmp : -cmp;
+function buildTree(items) {
+  const tree = {};
+  items.forEach(item => {
+    const u = item.user || 'unknown';
+    const p = item.project || 'unknown';
+    if (!tree[u]) tree[u] = {};
+    if (!tree[u][p]) tree[u][p] = [];
+    tree[u][p].push(item);
   });
+  // Sort prompts by date descending within each group
+  for (const u of Object.keys(tree)) {
+    for (const p of Object.keys(tree[u])) {
+      tree[u][p].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    }
+  }
+  return tree;
+}
 
+function render() {
+  const items = filterItems();
   const loading = document.getElementById('loading');
-  const table = document.getElementById('table');
+  const treeEl = document.getElementById('tree');
   const empty = document.getElementById('empty');
-  const tbody = document.getElementById('tbody');
 
   loading.style.display = 'none';
 
   if (items.length === 0) {
-    table.style.display = 'none';
+    treeEl.style.display = 'none';
     empty.style.display = 'block';
     return;
   }
 
-  table.style.display = 'table';
+  treeEl.style.display = 'block';
   empty.style.display = 'none';
 
-  tbody.innerHTML = items.map((item, i) => `
-    <tr style="animation-delay: ${Math.min(i * 30, 300)}ms">
-      <td class="col-time">${formatDate(item.createdAt)}</td>
-      <td class="col-project"><span>${esc(item.project)}</span></td>
-      <td class="col-user"><span>${esc(item.user)}</span></td>
-      <td class="col-prompt">${esc(item.prompt)}</td>
-    </tr>
-  `).join('');
+  const tree = buildTree(items);
+  const users = Object.keys(tree).sort();
+
+  treeEl.innerHTML = users.map(user => {
+    const projects = Object.keys(tree[user]).sort();
+    const userCount = projects.reduce((sum, p) => sum + tree[user][p].length, 0);
+
+    const projectNodes = projects.map(project => {
+      const prompts = tree[user][project];
+      const promptItems = prompts.map((item, i) =>
+        '<div class="prompt-item" style="animation-delay: ' + Math.min(i * 30, 300) + 'ms">' +
+          '<div class="prompt-text">' + esc(item.prompt) + '</div>' +
+          '<div class="prompt-meta">' + formatDate(item.createdAt) + '</div>' +
+        '</div>'
+      ).join('');
+
+      return '<div class="tree-node">' +
+        '<button class="tree-toggle" onclick="toggle(this)">' +
+          '<span class="tree-arrow">&#9654;</span>' +
+          '<span class="tree-icon">&#128196;</span>' +
+          '<span class="tree-label"><span class="tag-project">' + esc(project) + '</span></span>' +
+          '<span class="tree-count">' + prompts.length + ' prompts</span>' +
+        '</button>' +
+        '<div class="prompt-list">' + promptItems + '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="tree-node">' +
+      '<button class="tree-toggle" onclick="toggle(this)">' +
+        '<span class="tree-arrow">&#9654;</span>' +
+        '<span class="tree-icon">&#128100;</span>' +
+        '<span class="tree-label"><span class="tag-user">' + esc(user) + '</span></span>' +
+        '<span class="tree-count">' + userCount + ' prompts</span>' +
+      '</button>' +
+      '<div class="tree-children">' + projectNodes + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function toggle(btn) {
+  btn.parentElement.classList.toggle('open');
 }
 
 function formatDate(iso) {
   if (!iso) return '-';
   const d = new Date(iso);
   const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
 }
 
 function esc(s) {
@@ -391,23 +471,6 @@ function esc(s) {
   div.textContent = s || '';
   return div.innerHTML;
 }
-
-// Sort
-document.querySelectorAll('th[data-key]').forEach(th => {
-  th.addEventListener('click', () => {
-    const key = th.dataset.key;
-    if (sortKey === key) {
-      sortAsc = !sortAsc;
-    } else {
-      sortKey = key;
-      sortAsc = true;
-    }
-    document.querySelectorAll('th').forEach(t => t.classList.remove('sorted', 'asc'));
-    th.classList.add('sorted');
-    if (sortAsc) th.classList.add('asc');
-    render();
-  });
-});
 
 // Filters
 document.getElementById('search').addEventListener('input', render);
