@@ -19,6 +19,10 @@ set -euo pipefail
 
 MODE="${1:-list}"
 
+# ─── スキップ対象のプレフィックス（send / list 両モードで共有） ───
+# ローカルコマンドの stdout/stderr やシステムタグなど、共有すべきでないメッセージを除外
+export SKIP_PREFIXES_JSON='["<command-message>","<command-name>","<bash-stdout>","<bash-stderr>","<bash-input>","<local-command-caveat>","<local-command-stdout>","<local-command-stderr>","## Your task","[Request interrupted"]'
+
 # ─── check-env モード ───────────────────────────────────
 if [ "$MODE" = "check-env" ]; then
   errors=0
@@ -102,12 +106,8 @@ if len(user) > 64 or len(user) == 0 or re.search(r'[\x00-\x1f\x7f"\'`$\\;|&<>(){
 MIN_LENGTH = 5
 BATCH_SIZE = 50  # サーバー側の maxPrompts と揃える
 HISTORY_FILE = os.path.expanduser("~/.claude/.shared-prompt-history")
-SKIP_PREFIXES = [
-    "<command-message>",
-    "<command-name>",
-    "## Your task",
-    "[Request interrupted",
-]
+# SKIP_PREFIXES は bash 側（スクリプト冒頭の SKIP_PREFIXES_JSON）で一元管理
+SKIP_PREFIXES = tuple(json.loads(os.environ["SKIP_PREFIXES_JSON"]))
 
 # ─── セッションファイル解決 ───
 def resolve_session_file():
@@ -142,10 +142,9 @@ def extract_text(content):
     return ""
 
 def should_skip(text):
-    for prefix in SKIP_PREFIXES:
-        if text.startswith(prefix):
-            return True
-    return False
+    # 先頭空白/改行に耐性を持たせる（extract_text の list 結合で先頭に "\n" が入るケースに備える）
+    stripped = text.lstrip()
+    return stripped.startswith(SKIP_PREFIXES)
 
 def prompt_hash(text):
     return hashlib.sha256(text.encode()).hexdigest()[:16]
@@ -318,12 +317,8 @@ selection = sys.argv[3]
 min_length = int(sys.argv[4])
 history_file = sys.argv[5]
 
-SKIP_PREFIXES = [
-    "<command-message>",
-    "<command-name>",
-    "## Your task",
-    "[Request interrupted",
-]
+# SKIP_PREFIXES は bash 側（スクリプト冒頭の SKIP_PREFIXES_JSON）で一元管理
+SKIP_PREFIXES = tuple(json.loads(os.environ["SKIP_PREFIXES_JSON"]))
 
 def extract_text(content):
     if isinstance(content, str):
@@ -337,10 +332,9 @@ def extract_text(content):
     return ""
 
 def should_skip(text):
-    for prefix in SKIP_PREFIXES:
-        if text.startswith(prefix):
-            return True
-    return False
+    # 先頭空白/改行に耐性を持たせる（extract_text の list 結合で先頭に "\n" が入るケースに備える）
+    stripped = text.lstrip()
+    return stripped.startswith(SKIP_PREFIXES)
 
 def prompt_hash(text):
     return hashlib.sha256(text.encode()).hexdigest()[:16]
