@@ -267,7 +267,7 @@ fi
 
 resolve_session_file() {
   local project_dir_name
-  project_dir_name="$(pwd | sed 's/\//-/g')"
+  project_dir_name="$(pwd | sed 's/[/_]/-/g')"
   local project_path="$HOME/.claude/projects/${project_dir_name}"
 
   if [ ! -d "$project_path" ]; then
